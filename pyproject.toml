@@ -1,0 +1,26 @@
+[project]
+name = "spx-arbitrage"
+version = "0.1.0"
+description = "Linear programming methods for detecting static arbitrage and optimizing position liquidation in S&P 500 options markets."
+readme = "README.md"
+authors = [
+    { name = "Dylan Spektor", email = "dylanspek07@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "scipy>=1.18.1",
+]
+
+[project.scripts]
+spx-arbitrage = "spx_arbitrage:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
