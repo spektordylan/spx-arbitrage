@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-spx-arbitrage = "spx_arbitrage:main"
+spx-arb = "spx_arbitrage.main:main"
 
 [build-system]
 requires = ["hatchling"]
