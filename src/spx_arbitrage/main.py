@@ -12,26 +12,32 @@ from pathlib import Path
 
 import pandas as pd
 
+from data import OptionFile, load_file_as_optionfile, build_chain, prompt_expiry, prompt_series
+
 DEFAULT_OUTPUT_DIR = Path("output")
 
 # CBOE files start with a blank row, a last S&P 500 price row, and a header row
 CBOE_HEADER_ROWS = 3
 
 def clean_path_input(text: str) -> Path:
-    """Strip whitespace and surrounding quotes, expand."""
+    """
+    Strip whitespace and surrounding quotes, expand.
+    """
     return Path(text.strip().strip("\"'")).userexpand()
 
 
-def prompt_data_path() -> tuple[Path, pd.DataFrame]:
-    """Ask for the input csv until it can be read. Returns the path and the raw data."""
+def prompt_option_file() -> tuple[Path, OptionFile]:
+    """
+    Ask for the input csv until it can be loaded. Returns the path and the OptionFile (defined in data.py).
+    """
     while True:
         path = clean_path_input(input("Specify data input path (csv): "))
         try:
-            data = pd.read_csv(path, skiprows=CBOE_HEADER_ROWS, header=None)
+            option_file = load_file_as_optionfile(path)
         except Exception as e:
             print(f"Error reading data file ({e}). Please re-enter the path to the csv file.")
             continue
-        return path, data
+        return path, option_file
 
 
 def prompt_output_location() -> Path:
@@ -59,28 +65,38 @@ def prompt_output_location() -> Path:
 
 
 def default_filename(data_path: Path, *tags: str) -> str:
-    """Build a default filename from the input file's name plus optional tags
-    (e.g. part and expiry), with whitespace replaced by underscores."""
+    """
+    Build a default filename from the input file's name plus optional tags
+    (e.g. part and expiry), with whitespace replaced by underscores.
+    """
     name = "_".join([data_path.stem, *tags])
     return "_".join(name.split()) + ".csv"
 
 
 def resolve_output_path(location: Path, data_path: Path, *tags: str) -> Path:
-    """Convert the user's output path choice into a concrete file path."""
+    """
+    Convert the user's output path choice into a concrete file path.
+    If file name not given, names csv using information about query.
+    """
     if location.suffix.lower() == ".csv":
         return location
     return location / default_filename(data_path, *tags)
 
 
 def main() -> None:
-    data_path, option_data = prompt_data_path()
+    data_path, option_file = prompt_option_file()
     output_location = prompt_output_location()
 
-    # TODO: expiry -> series (only if both exist) -> Part 1 or Part 2
-    # -> Part 2 additional inputs. Once part and expiry are known, pass them as tags,
-    # e.g. resolve_output_path(output_location, data_path, "arb", "2022-10-21").
-    output_path = resolve_output_path(output_location, data_path)
+    expiry = prompt_expiry(option_file.data)
+    series = prompt_series(option_file.data, expiry)
+    chain = build_chain(option_file, expiry, series)
+
+    # TODO: Part 1 or Part 2 prompt, then Part 2 additional inputs.
+    part = "arb"  # placeholder until the part prompt exists
+
+    output_path = resolve_output_path(output_location, data_path, part, expiry.date().isoformat(), series)
     print(f"Results will be saved to: {output_path}")
+
 
 if __name__ == "__main__":
     main()
