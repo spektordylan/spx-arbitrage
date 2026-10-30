@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Linear programming methods for detecting static arbitrage and optimizing position liquidation in S&P 500 options markets."
 readme = "README.md"
 authors = [
-    { name = "Dylan Spektor", email = "dylanspek07@gmail.com" }
+    {name = "Dylan Spektor"}
 ]
 requires-python = ">=3.14"
 dependencies = [
