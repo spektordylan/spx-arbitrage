@@ -1,7 +1,7 @@
 """
 main.py
 
-Interactive CLI entry point for the project (run with `spx-arb`).
+Interactive CLI entry point for the project.
 
 Walks the user through both parts of the project (Part 1: arbitrage check,
 Part 2: optimal exit portfolio), handles all communication between the
@@ -22,6 +22,7 @@ POSITION_LIMIT = 100.0
 # CBOE files start with a blank row, a last S&P 500 price row, and a header row
 CBOE_HEADER_ROWS = 3
 
+TOL = -1e-6
 
 def clean_path_input(text: str) -> Path:
     """
@@ -213,7 +214,6 @@ def build_results(chain, x: np.ndarray, holdings: np.ndarray | None = None) -> p
     
     x = np.asarray(x, dtype=float).ravel()
     x = np.round(x, 6) + 0.0  # round off solver noise; + 0.0 turns -0.0 into 0.0
-    n = len(chain.strikes)
     n = len(chain.strikes)
 
     long, short = x[:n], x[n:2 * n]
