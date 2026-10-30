@@ -44,7 +44,7 @@ class LPModel:
     c: np.ndarray
     A_ub: np.ndarray | None
     b_ub: np.ndarray | None
-    bounds: tuple[float, float | None]
+    bounds: list[tuple[float, float | None]]
     n_options: int
     A_eq: np.ndarray | None = None
     b_eq: np.ndarray | None = None
@@ -85,12 +85,16 @@ def build_base_model(
  
     X = payoff_matrix(strikes, is_call)
  
-    c = np.concatenate([ask, -bid])
- 
+    # missing ask (NaN) means the option can't be bought, so fix L_i at zero
+    nan_ask = np.isnan(ask)
+    c = np.concatenate([np.where(nan_ask, 0.0, ask), -bid])
+
     A_ub = np.hstack([-X.T, X.T])
     b_ub = np.zeros(X.shape[1])
- 
-    bounds = (0.0, position_limit)
+
+    upper = np.full(2 * n, position_limit)
+    upper[:n] = np.where(nan_ask, 0.0, position_limit)
+    bounds = [(0.0, u) for u in upper]
     
     return LPModel(c=c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, n_options=n)
 
@@ -130,5 +134,8 @@ def build_portfolio_model(
  
     A_eq = np.hstack([X.T, -X.T, bond_col[:, None], -bond_col[:, None]])
     b_eq = -(X.T @ holdings)
- 
-    return LPModel(c=c, A_ub=None, b_ub=None, bounds=base.bounds, n_options=n, A_eq=A_eq, b_eq=b_eq)
+
+    # bonds unbounded
+    bounds = base.bounds + [(0.0, None), (0.0, None)]
+
+    return LPModel(c=c, A_ub=None, b_ub=None, bounds=bounds, n_options=n, A_eq=A_eq, b_eq=b_eq)
