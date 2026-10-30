@@ -267,10 +267,11 @@ def main() -> None:
 
         if z < 0:
             print(f"Arbitrage detected! Profit: {-z}")
+            build_results(chain, x).to_csv(output_path, index=False)
+            print(f"Saved to {output_path}")
         else:
-            print("No arbitrage detected.")
-
-        build_results(chain, x).to_csv(output_path, index=False)
+            print("No arbitrage detected. No file written.")
+        return
 
     else:
         holdings = prompt_holdings(chain)
