@@ -2,7 +2,7 @@
 
 Linear programming methods for detecting static arbitrage and optimizing position liquidation in S&P 500 options markets.
 
-This is a project for APPM 4720: Open Topics in Applied Mathematics, Mathematical Finance, instructed by Dr. Daniel Brown.
+This is a project for APPM 4720 - Open Topics in Applied Mathematics: Mathematical Finance, instructed by Dr. Daniel Brown.
 
 ## Build and Run
 
