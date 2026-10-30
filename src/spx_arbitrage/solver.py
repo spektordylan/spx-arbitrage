@@ -40,7 +40,7 @@ class Solver:
         self.time_to_expiry = float(time_to_expiry)
 
 
-    def main(self) -> tuple[float, np.array]:
+    def main(self) -> tuple[float, np.ndarray]:
         """
         Builds the appropriate LP model and solves it. 
         Returns the resulting objective value and solution vector.
