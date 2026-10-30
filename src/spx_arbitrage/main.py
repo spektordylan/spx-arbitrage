@@ -212,6 +212,8 @@ def build_results(chain, x: np.ndarray, holdings: np.ndarray | None = None) -> p
     """
     
     x = np.asarray(x, dtype=float).ravel()
+    x = np.round(x, 6) + 0.0  # round off solver noise; + 0.0 turns -0.0 into 0.0
+    n = len(chain.strikes)
     n = len(chain.strikes)
 
     long, short = x[:n], x[n:2 * n]
