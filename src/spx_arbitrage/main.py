@@ -267,7 +267,7 @@ def main() -> None:
             print('Solving error:', e)
             return
 
-        if z < 0:
+        if z < TOL:
             print(f"Arbitrage detected! Profit: {-z}")
             build_results(chain, x).to_csv(output_path, index=False)
             print(f"Saved to {output_path}")
@@ -278,7 +278,6 @@ def main() -> None:
     else:
         holdings = prompt_holdings(chain)
         rate = prompt_float("Risk-free rate: ")
-        time_to_expiry = prompt_float("Time to expiry (years): ")
 
         lp = solver.Solver(
             strikes=chain.strikes,
@@ -288,7 +287,7 @@ def main() -> None:
             position_limit=POSITION_LIMIT,
             holdings=holdings,
             rate=rate,
-            time_to_expiry=time_to_expiry,
+            time_to_expiry=chain.time_to_expiry(),
         )
         try:
             z, x = lp.main()

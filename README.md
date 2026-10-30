@@ -52,7 +52,7 @@ The program is interactive and asks for everything it needs:
 3. An expiry and, if both exist for that expiry, a series (SPX or SPXW).
 4. Which problem to solve: arbitrage detection (`a`) or exit portfolio construction (`c`).
 
-For exit portfolio construction it also asks for your current position, the risk-free rate (continuously compounded) and the time to expiry in years. A single option position is entered directly at the prompt. Multiple positions are read from a csv with the columns:
+For exit portfolio construction it also asks for your current position and the risk-free rate (continuously compounded). A single option position is entered directly at the prompt. Multiple positions are read from a csv with the columns:
 
 ```csv
 strike,is_call,quantity
