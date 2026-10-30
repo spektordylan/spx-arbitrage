@@ -45,16 +45,16 @@ class OptionChain:
     """
     Option chain to be formed from data.
     One expiry, one series (weekly/monthly).
+    Calls/puts are stored together (all calls by ascending strikes then all puts).
     """
     spot: float
     quote_time: pd.Timestamp
     expiry_time: pd.Timestamp
-    series: str 
+    series: str
     strikes: np.ndarray
-    call_bid: np.ndarray
-    call_ask: np.ndarray
-    put_bid: np.ndarray
-    put_ask: np.ndarray
+    is_call: np.ndarray
+    bid: np.ndarray
+    ask: np.ndarray
 
     def settlement_time(self) -> pd.Timestamp:
         """
@@ -137,10 +137,13 @@ def prompt_expiry(df: pd.DataFrame) -> pd.Timestamp:
     while not valid_expiry_given:
         text = input("Expiry (YYYY-MM-DD): ").strip()
         try:
-            expiry = pd.Timestamp(text).normalize()
+            expiry = pd.Timestamp(text)
         except (ValueError, TypeError):
+            expiry = pd.NaT
+        if pd.isna(expiry):
             print("Could not parse that date. Please try again.")
             continue
+        expiry = expiry.normalize()
         if (expiries == expiry).any():
             valid_expiry_given = True
         else:
@@ -189,15 +192,19 @@ def build_chain(option_file: OptionFile, expiry: str | pd.Timestamp, series: str
 
     call_bid, call_ask = _clean_quotes(sub["call_bid"].to_numpy(float), sub["call_ask"].to_numpy(float))
     put_bid, put_ask = _clean_quotes(sub["put_bid"].to_numpy(float), sub["put_ask"].to_numpy(float))
+    
+    strikes = sub["strike"].to_numpy(float)
+    m = len(strikes)
 
     chain = OptionChain(
         spot=option_file.spot,
         quote_time=option_file.quote_time,
         expiry_time=expiry,
         series=series,
-        strikes=sub["strike"].to_numpy(float),
-        call_bid=call_bid, call_ask=call_ask,
-        put_bid=put_bid, put_ask=put_ask,
+        strikes=np.concatenate([strikes, strikes]),
+        is_call=np.concatenate([np.ones(m, dtype=bool), np.zeros(m, dtype=bool)]),
+        bid=np.concatenate([call_bid, put_bid]),
+        ask=np.concatenate([call_ask, put_ask]),
     )
     if chain.time_to_expiry() <= 0:
         raise ValueError("settlement is not after quote time")
