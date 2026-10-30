@@ -4,6 +4,8 @@ Linear programming methods for detecting static arbitrage and optimizing positio
 
 This is a project for APPM 4720 - Open Topics in Applied Mathematics: Mathematical Finance, instructed by Dr. Daniel Brown.
 
+Repository link: https://github.com/spektordylan/spx-arbitrage
+
 ## Build and Run
 
 ### Install uv
