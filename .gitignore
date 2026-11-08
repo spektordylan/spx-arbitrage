@@ -11,3 +11,4 @@ wheels/
 data/
 output/
 __pycache__/
+test/

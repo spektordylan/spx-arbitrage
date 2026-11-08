@@ -118,11 +118,11 @@ def load_file_as_optionfile(path: Path) -> OptionFile:
 
 def _clean_quotes(bid: np.ndarray, ask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
-    Cleans bid/ask quotes to handle market implications of missing/zero prices.
+    Cleans missing/zero bid/ask quotes.
     """
-    bid = np.where(np.isnan(bid) | (bid < 0), 0.0, bid) # NaN/nonpositive bid means no buyers => 0.0 price
-    bad = np.isnan(ask) | (ask <= 0)      # get all bad quotes (missing/nonpositive ask)
-    return np.where(bad, 0.0, bid), np.where(bad, np.nan, ask)  # bad bid quotes become 0.0, bad asks become NaN (0.0 implies free option!)
+    bid = np.where(np.isnan(bid), 0.0, bid) # missing bid quotes become 0.0, no buyers
+    ask = np.where(ask == 0, np.nan, ask) # zero ask means no offer
+    return bid, ask
 
 
 def prompt_expiry(df: pd.DataFrame) -> pd.Timestamp:
@@ -209,3 +209,4 @@ def build_chain(option_file: OptionFile, expiry: str | pd.Timestamp, series: str
     if chain.time_to_expiry() <= 0:
         raise ValueError("settlement is not after quote time")
     return chain
+
