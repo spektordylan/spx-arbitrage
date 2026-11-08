@@ -118,10 +118,13 @@ def load_file_as_optionfile(path: Path) -> OptionFile:
 
 def _clean_quotes(bid: np.ndarray, ask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
-    Cleans missing/zero bid/ask quotes.
+    Cleans missing/zero bid/ask quotes based on market implications.
     """
+    no_offer = np.isnan(ask) | ((ask == 0) & (bid >= 0)) # consider offer missing if 1) ask is missing (straightforward),
+                                                         # or (2) ask is zero and bid is nonnegative, meaning no seller.
+                                                         # if ask is zero and bids are negative, asks are not treated as missing
     bid = np.where(np.isnan(bid), 0.0, bid) # missing bid quotes become 0.0, no buyers
-    ask = np.where(ask == 0, np.nan, ask) # zero ask means no offer
+    ask = np.where(no_offer, np.nan, ask)
     return bid, ask
 
 
