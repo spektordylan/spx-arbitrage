@@ -1,13 +1,13 @@
 """
 model.py
 
-Builds the LP to be solved by arbitrage.py annd exit_portfolio.py
+Builds the LPs to be solved by solver.py
 
 Decision vector (length 2n):  x = [L_1..L_n, S_1..S_n]
     L_i >= 0 : units of option i bought (at ask a_i)
     S_i >= 0 : units of option i sold   (at bid b_i)
  
-Base model:
+Stong arbitrage model (paid to enter, never lose):
     minimize    sum_i a_i * L_i - b_i * S_i
     subject to  sum_i (L_i - S_i) * X_ij >= 0   for every state j (see below explanation for j = n + 1)
                 0 <= L_i, S_i <= position_limit
@@ -22,8 +22,19 @@ Base model:
     slope constraint by dividing the base constraint by the state price and taking the limit as it
     grows arbitrarily, resulting in a LHS of (L_i - S_i) for call options and 0 for put options, as expected.
 
+    
+If the above model's optimal objective is zero, that means we cannot be paid to enter.
+But it can still be free to enter, and we need to determine if doing so can lead to profitable trades (vs. just doing nothing).
+
+Weak arbitrage model (free to enter, strictly positive probility of win):
+    Built from the strong model, adding a cost constraint
+        maximize    sum_j sum_i (L_i - S_i) * X_ij       (maximize payoff across all states)
+        subject to  sum_i a_i * L_i - b_i * S_i <= 0     (free to enter, or paid to enter. Note this is c dot x from strong model.)
+                    sum_i (L_i - S_i) * X_ij >= 0        for every state j
+                    0 <= L_i, S_i <= position_limit
 
 Portfolio (exit) model: 
+    Built from the strong arbitrage model.
     same variables plus bond columns, x = [L, S, L_B, S_B]
         minimize    sum_i a_i * L_i - b_i * S_i + e^{-rT} * (L_B - S_B)
         subject to  sum_i (L_i - S_i) * X_ij + (L_B - S_B) = -sum_i h_i * X_ij  for all j
@@ -66,7 +77,7 @@ def payoff_matrix(strikes: np.ndarray, is_call: np.ndarray) -> np.ndarray:
     return np.hstack([X, above_max])
 
 
-def build_base_model(
+def build_strong_arb_model(
     strikes: np.ndarray, 
     is_call: np.ndarray, 
     bid: np.ndarray, 
@@ -74,7 +85,8 @@ def build_base_model(
     position_limit: float = 1.0
 ) -> LPModel:
     """
-    Base arbitrage-detection LP. A negative objective means arbitrage exists.
+    Strong arbitrage-detection LP. A negative objective means strong arbitrage exists
+    (paid to enter, never lose). An objective of 0 does not rule out weak arbitrage!
  
     position_limit caps the amount of long/short orders for each option to ensure boundedness.
     """
@@ -99,6 +111,32 @@ def build_base_model(
     return LPModel(c=c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, n_options=n)
 
 
+def build_weak_arb_model(strong: LPModel) -> LPModel:
+    """
+    Weak arbitrage-detection LP, built from the strong model.
+ 
+    Maximizes total payoff over all states subject to the same payoff constraints,
+    plus a constraint that the cost is at most zero. result.fun is the negated max
+    total payoff, so a strictly negative result.fun means we can win after a free entry.
+    """
+ 
+    # each row of strong.A_ub is that state's payoff negated, so summing rows and negating
+    # gives each option's total payoff across all states
+    total_payoff = -strong.A_ub.sum(axis=0)
+ 
+    # append the cost constraint row c dot x <= 0.
+    A_ub = np.vstack([strong.A_ub, strong.c])
+    b_ub = np.append(strong.b_ub, 0.0)
+ 
+    return LPModel(
+        c=-total_payoff,
+        A_ub=A_ub,
+        b_ub=b_ub,
+        bounds=strong.bounds,
+        n_options=strong.n_options,
+    )
+
+
 def build_portfolio_model(
     strikes: np.ndarray,
     is_call: np.ndarray,
@@ -121,7 +159,7 @@ def build_portfolio_model(
     # let position_limit match max holdings
     position_limit = max(position_limit, float(np.max(np.abs(holdings))))
  
-    base = build_base_model(strikes, is_call, bid, ask, position_limit)
+    base = build_strong_arb_model(strikes, is_call, bid, ask, position_limit)
     X = payoff_matrix(strikes, is_call)
     m = X.shape[1]
  

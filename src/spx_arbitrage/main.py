@@ -22,7 +22,6 @@ POSITION_LIMIT = 100.0
 # CBOE files start with a blank row, a last S&P 500 price row, and a header row
 CBOE_HEADER_ROWS = 3
 
-TOL = -1e-6
 
 def clean_path_input(text: str) -> Path:
     """
@@ -267,8 +266,12 @@ def main() -> None:
             print('Solving error:', e)
             return
 
-        if z < TOL:
-            print(f"Arbitrage detected! Profit: {-z}")
+        if lp.arbitrage_type == "strong":
+            print(f"Strong arbitrage detected! Paid to enter. Profit: {-z}")
+            build_results(chain, x).to_csv(output_path, index=False)
+            print(f"Saved to {output_path}")
+        elif lp.arbitrage_type == "weak":
+            print(f"Weak arbitrage detected! Max total payoff: {-z}")
             build_results(chain, x).to_csv(output_path, index=False)
             print(f"Saved to {output_path}")
         else:
